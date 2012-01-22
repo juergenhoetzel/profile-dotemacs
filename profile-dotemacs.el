@@ -61,13 +61,16 @@
 
 ;;; Code:
 
+(require 'cl)
 (require 'thingatpt)
 (require 'benchmark)
 
 ;; User variables
 
-(defvar profile-dotemacs-file "~/.emacs"
-  "File to be profiled.")
+(defconst profile-dotemacs-user-init-files '("~/.emacs"
+					     "~/.emacs.el"
+					     "~/.emacs.d/init.el")
+  "Possible user init files to be profiled.")
 
 (defvar profile-dotemacs-low-percentage 3
   "Percentage which should be considered low.
@@ -92,9 +95,9 @@ grayed out.")
 ;; Main function
 
 (defun profile-dotemacs ()
-  "Load `profile-dotemacs-file' and benchmark its sexps."
+  "Load first existent init file from `profile-dotemacs-files' and benchmark its sexps."
   (interactive)
-  (with-current-buffer (find-file-noselect profile-dotemacs-file t)
+  (with-current-buffer (find-file-noselect (car (remove-if-not #'file-exists-p profile-dotemacs-user-init-files)) t)
     (setq buffer-read-only t) ;; just to be sure
     (goto-char (point-min))
     (let (start end results)
@@ -109,7 +112,7 @@ grayed out.")
 	 'results
 	 `(,start ,end
 		  ,(benchmark-run
-		    (eval (sexp-at-point)))))
+		       (eval (sexp-at-point)))))
 	(goto-char end))
       (profile-dotemacs-show-results results)
       (switch-to-buffer (current-buffer)))))
